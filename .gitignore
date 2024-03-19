@@ -1,0 +1,9 @@
+*.spv
+*.o
+.vscode/
+html/
+latex/
+discard/
+textures/
+Doxyfile
+models/
