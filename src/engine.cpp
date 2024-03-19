@@ -204,7 +204,7 @@ namespace ASH {
 
         std::unordered_map<meshTypes, std::vector<const char*>> modelPaths = {
             {meshTypes::GROUND, {"models/quad.obj","models/quad.mtl"}},
-            {meshTypes::GIRL, {"models/girl.obj","models/girl.mtl"}},
+            {meshTypes::VOXEL, {"models/voxel.obj","models/voxel.mtl"}},
             {meshTypes::SKULL, {"models/skull.obj","models/skull.mtl"}}
         };
 
@@ -223,7 +223,7 @@ namespace ASH {
 
         std::unordered_map<meshTypes, const char*> filenames = {
             {meshTypes::GROUND, "models/quad.jpg"},
-            {meshTypes::GIRL, "textures/none.png"},
+            {meshTypes::VOXEL, "models/voxel.png"},
             {meshTypes::SKULL, "models/skull.png"}
         };
 
@@ -263,8 +263,8 @@ namespace ASH {
 
         ASHUtil::SwapChainFrame& _frame = m_swapchainFrames[imageIndex];
 
-        glm::vec3 eye = { -1.0f, 0.0f, 1.0f };
-        glm::vec3 center = { 1.0f, 0.0f, 1.0f };
+        glm::vec3 eye = { -10.0f, 0.0f, 10.0f };
+        glm::vec3 center = { 0.f, 0.0f, 0.0f };
         glm::vec3 up = { 0.0f, 0.0f, 1.0f };
         glm::mat4 view = glm::lookAt(eye, center, up);
         
@@ -307,8 +307,6 @@ namespace ASH {
         renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
         renderPassInfo.renderArea.extent = m_swapchainExtent;
 
-        
-
         vk::ClearValue colorClear;
         std::array<float, 4> colors = { 0.2f,0.2f,0.2f, 1.0f };
         colorClear.color = vk::ClearColorValue(colors);
@@ -319,28 +317,18 @@ namespace ASH {
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
-        
-
         commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline);
 
-        
-
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, m_swapchainFrames[imageIndex].descriptorSet, nullptr);
 
-        
-
         prepScene(commandBuffer);
-
-        
 
         uint32_t startInstance = 0;
         for (std::pair<meshTypes, std::vector<glm::vec3>> pair : scene->positions) {
             renderObjects(commandBuffer, pair.first, startInstance, static_cast<uint32_t>(pair.second.size()));
         }
-
-        
 
         commandBuffer.endRenderPass();
 

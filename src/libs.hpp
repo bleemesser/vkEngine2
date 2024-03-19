@@ -51,7 +51,7 @@ struct Buffer {
 };
 
 enum class meshTypes {
-	GIRL,
+	VOXEL,
 	GROUND,
 	SKULL
 };

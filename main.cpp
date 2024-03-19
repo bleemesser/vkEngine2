@@ -2,7 +2,7 @@
 
 int main() {
 
-	App* vkApp = new App(800, 600);
+	App* vkApp = new App(1920, 1080);
 
 	vkApp->run();
 

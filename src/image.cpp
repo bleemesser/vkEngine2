@@ -54,6 +54,8 @@ void ASHImage::Texture::use(vk::CommandBuffer commandBuffer, vk::PipelineLayout 
 }
 
 void ASHImage::Texture::load() {
+    stbi_set_flip_vertically_on_load(true);
+
     stbi_uc* pixels = stbi_load(m_path, &m_width, &m_height, &m_channels, STBI_rgb_alpha);
 
     if (!pixels) {
