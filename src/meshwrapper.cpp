@@ -4,9 +4,9 @@ MeshWrapper::MeshWrapper() {
     m_indexOffset = 0;
 }
 
-void MeshWrapper::consume(meshTypes type, std::vector<float> vertices, std::vector<uint32_t> indices) {
+void MeshWrapper::consume(meshTypes type, std::vector<float>& vertices, std::vector<uint32_t>& indices) {
     
-    int vertexCount = static_cast<int>(vertices.size() / 7);
+    int vertexCount = static_cast<int>(vertices.size() / 8);
     int indexCount = static_cast<int>(indices.size());
     int lastIndex = static_cast<int>(m_indexLump.size());
 
@@ -68,6 +68,8 @@ void MeshWrapper::finalize(FinalizationChunk chunk) {
 
     m_device.destroyBuffer(stagingBuffer.buffer);
     m_device.freeMemory(stagingBuffer.memory);
+
+    m_indexLump.clear();
 
 
 }

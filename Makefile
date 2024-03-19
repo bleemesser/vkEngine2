@@ -1,4 +1,4 @@
-CFLAGS = -std=c++17 -O2 -Isrc -Ilibs
+CFLAGS = -std=c++20 -O2 -Isrc -Ilibs
 # -Ilibs
 # CFLAGS = -std=c++20 -O2 -Iinclude $(foreach dir,$(wildcard libs/*),$(if $(wildcard $(dir)/include),-I$(dir)/include,-I$(dir)))
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi

@@ -9,6 +9,7 @@
 #include "commands.hpp"
 #include "sync.hpp"
 #include "descriptors.hpp"
+#include "obj.hpp"
 
 namespace ASH {
     Engine::Engine(int width, int height, GLFWwindow *window) : m_width(width), m_height(height), m_window(window) {
@@ -196,77 +197,42 @@ namespace ASH {
     }
 
     void Engine::createAssets() {
+        #ifdef DEBUG
+        std::cout << yellow("Loading assets") << std::endl;
+        #endif
         m_meshes = new MeshWrapper();
 
-        std::vector<float> vertices = { {
-            0.0f, -0.1f, 1.0f, 1.0f, 1.0f, 0.5f, 0.0f,
-            0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-            -0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
-	    } };
-        std::vector<uint32_t> indices = { {
-            0, 1, 2
-        } };
-
-
-        meshTypes type = meshTypes::TRIANGLE;
-        m_meshes->consume(type, vertices, indices);
-        
-        vertices = { {
-            -0.1f,  0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-            -0.1f, -0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-            0.1f, -0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-            0.1f, -0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-	    } };
-        indices = { {
-            0, 1, 2,
-            2, 3, 0
-        } };
-        type = meshTypes::SQUARE;
-        m_meshes->consume(type, vertices, indices);
-
-        vertices = {{
-            -0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 0.0f, 0.25f, 
-            -0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.3f, 0.25f,
-            -0.06f, 0.0f, 1.0f, 1.0f, 1.0f, 0.2f, 0.5f,   
-            0.0f, -0.1f, 1.0f, 1.0f, 1.0f, 0.5f, 0.0f,    
-            0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.7f, 0.25f, 
-            0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 1.0f, 0.25f,  
-            0.06f, 0.0f, 1.0f, 1.0f, 1.0f, 0.8f, 0.5f,    
-            0.08f, 0.1f, 1.0f, 1.0f, 1.0f, 0.9f, 1.0f,    
-            0.0f, 0.02f, 1.0f, 1.0f, 1.0f, 0.5f, 0.6f,    
-            -0.08f, 0.1f, 1.0f, 1.0f, 1.0f, 0.1f, 1.0f    
-        }};
-        indices = {{
-            0, 1, 2,
-            1, 3, 4,
-            2, 1, 4,
-            4, 5, 6,
-            2, 4, 6,
-            6, 7, 8,
-            2, 6, 8,
-            2, 8, 9
-        }};
-        type = meshTypes::STAR;
-        m_meshes->consume(type, vertices, indices);
-
-        FinalizationChunk chunk{};
-        chunk.device = m_device;
-        chunk.physicalDevice = m_physicalDevice;
-        chunk.queue = m_graphicsQueue;
-        chunk.commandBuffer = m_primaryCommandBuffer;
-
-        m_meshes->finalize(chunk);
-
-        std::unordered_map<meshTypes, const char*> paths = {
-            {meshTypes::TRIANGLE, "textures/face.jpg"},
-            {meshTypes::SQUARE, "textures/haus.jpg"},
-            {meshTypes::STAR, "textures/noroi.png"}
+        std::unordered_map<meshTypes, std::vector<const char*>> modelPaths = {
+            {meshTypes::GROUND, {"models/quad.obj","models/quad.mtl"}},
+            {meshTypes::GIRL, {"models/girl.obj","models/girl.mtl"}},
+            {meshTypes::SKULL, {"models/skull.obj","models/skull.mtl"}}
         };
 
+
+        for (std::pair<meshTypes, std::vector<const char*>> pair : modelPaths) {
+            ASHModel::Obj model(pair.second[0], pair.second[1], glm::mat4(1.f));
+            m_meshes->consume(pair.first, model.vertices, model.indices);
+        }
+
+        FinalizationChunk finalizationInfo{};
+        finalizationInfo.device = m_device;
+        finalizationInfo.physicalDevice = m_physicalDevice;
+        finalizationInfo.queue = m_graphicsQueue;
+        finalizationInfo.commandBuffer = m_primaryCommandBuffer;
+        m_meshes->finalize(finalizationInfo);
+
+        std::unordered_map<meshTypes, const char*> filenames = {
+            {meshTypes::GROUND, "models/quad.jpg"},
+            {meshTypes::GIRL, "textures/none.png"},
+            {meshTypes::SKULL, "models/skull.png"}
+        };
+
+        
         ASHInit::DescriptorSetLayoutData bindings;
         bindings.count = 1;
         bindings.types.push_back(vk::DescriptorType::eCombinedImageSampler);
-        m_meshPool = ASHInit::createDescriptorPool(m_device, static_cast<uint32_t>(paths.size()), bindings);
+
+        m_meshPool = ASHInit::createDescriptorPool(m_device, static_cast<uint32_t>(filenames.size()), bindings);
 
         ASHImage::TextureInput input{};
         input.commandBuffer = m_primaryCommandBuffer;
@@ -276,10 +242,14 @@ namespace ASH {
         input.layout = m_meshSetLayout;
         input.pool = m_meshPool;
 
-        for (const auto& [object, path] : paths) {
-            input.path = path;
+        for (const auto & [object, filename] : filenames) {
+            input.path = filename;
             m_materials[object] = new ASHImage::Texture(input);
         }
+
+        #ifdef DEBUG
+        std::cout << green("Assets loaded") << std::endl;
+        #endif
     }
 
     void Engine::prepScene(vk::CommandBuffer commandBuffer) {
@@ -293,12 +263,12 @@ namespace ASH {
 
         ASHUtil::SwapChainFrame& _frame = m_swapchainFrames[imageIndex];
 
-        glm::vec3 eye = { 1.0f, 0.0f, -1.0f };
-        glm::vec3 center = { 0.0f, 0.0f, 0.0f };
-        glm::vec3 up = { 0.0f, 0.0f, -1.0f };
+        glm::vec3 eye = { -1.0f, 0.0f, 1.0f };
+        glm::vec3 center = { 1.0f, 0.0f, 1.0f };
+        glm::vec3 up = { 0.0f, 0.0f, 1.0f };
         glm::mat4 view = glm::lookAt(eye, center, up);
-
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), m_swapchainExtent.width / (float) m_swapchainExtent.height, 0.1f, 10.0f);
+        
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), m_swapchainExtent.width / (float) m_swapchainExtent.height, 0.1f, 100.0f);
         
         // glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 10.0f);
         projection[1][1] *= -1; // flip y coordinate
@@ -310,19 +280,11 @@ namespace ASH {
         memcpy(_frame.cameraDataWritePtr, &_frame.cameraData, sizeof(ASHUtil::UBO));
 
         size_t i = 0;
-        for (glm::vec3& position : scene->trianglePositions) {
-            _frame.modelMatrices[i] = glm::translate(glm::mat4(1.0f), position);
-            i++;
-        }
 
-        for (glm::vec3& position : scene->squarePositions) {
-            _frame.modelMatrices[i] = glm::translate(glm::mat4(1.0f), position);
-            i++;
-        }
-
-        for (glm::vec3& position : scene->starPositions) {
-            _frame.modelMatrices[i] = glm::translate(glm::mat4(1.0f), position);
-            i++;
+        for (std::pair<meshTypes, std::vector<glm::vec3>> pair : scene->positions) {
+            for (glm::vec3& position : pair.second) {
+                _frame.modelMatrices[i++] = glm::translate(glm::mat4(1.0f), position);
+            }
         }
 
         memcpy(_frame.modelMatrixWritePtr, _frame.modelMatrices.data(), i * sizeof(glm::mat4));
@@ -345,31 +307,41 @@ namespace ASH {
         renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
         renderPassInfo.renderArea.extent = m_swapchainExtent;
 
-        vk::ClearValue clearColor = { std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f} };
-        vk::ClearValue clearDepth = { vk::ClearDepthStencilValue{1.0f, 0} };
-        std::vector<vk::ClearValue> clearValues = {clearColor, clearDepth};
+        
+
+        vk::ClearValue colorClear;
+        std::array<float, 4> colors = { 0.2f,0.2f,0.2f, 1.0f };
+        colorClear.color = vk::ClearColorValue(colors);
+        vk::ClearValue depthClear;
+
+        depthClear.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+        std::vector<vk::ClearValue> clearValues = { {colorClear, depthClear} };
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
-        commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+        
 
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, m_swapchainFrames[imageIndex].descriptorSet, nullptr);
+        commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
         commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline);
 
+        
+
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, m_swapchainFrames[imageIndex].descriptorSet, nullptr);
+
+        
+
         prepScene(commandBuffer);
 
-        uint32_t startInstance = 0;
-
-        uint32_t instanceCount = static_cast<uint32_t>(scene->trianglePositions.size());
-        renderObjects(commandBuffer, meshTypes::TRIANGLE, startInstance, instanceCount);
-
-        instanceCount = static_cast<uint32_t>(scene->squarePositions.size());
-        renderObjects(commandBuffer, meshTypes::SQUARE, startInstance, instanceCount);
-
-        instanceCount = static_cast<uint32_t>(scene->starPositions.size());
-        renderObjects(commandBuffer, meshTypes::STAR, startInstance, instanceCount);
         
+
+        uint32_t startInstance = 0;
+        for (std::pair<meshTypes, std::vector<glm::vec3>> pair : scene->positions) {
+            renderObjects(commandBuffer, pair.first, startInstance, static_cast<uint32_t>(pair.second.size()));
+        }
+
+        
+
         commandBuffer.endRenderPass();
 
         try {
@@ -380,16 +352,25 @@ namespace ASH {
     }
 
     void Engine::renderObjects(vk::CommandBuffer commandBuffer, meshTypes type, uint32_t& startInstance, uint32_t instanceCount) {
+        
+
         int indexCount = m_meshes->m_indexCounts.find(type)->second;
         int firstIndex = m_meshes->m_firstIndices.find(type)->second;
+
+        
+
         m_materials[type]->use(commandBuffer, m_pipelineLayout);
+
+        
         commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, 0, startInstance);
+
+        
         startInstance += instanceCount;
     }
 
     void Engine::render(Scene *scene) {
-        m_device.waitForFences(1, &m_swapchainFrames[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
-        m_device.resetFences(1, &m_swapchainFrames[m_currentFrame].inFlightFence);
+        m_device.waitForFences(1, &(m_swapchainFrames[m_currentFrame].inFlightFence), VK_TRUE, UINT64_MAX);
+        m_device.resetFences(1, &(m_swapchainFrames[m_currentFrame].inFlightFence));
 
 
         uint32_t imageIndex;
@@ -423,11 +404,15 @@ namespace ASH {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
+        
+
         try {
             m_graphicsQueue.submit(submitInfo, m_swapchainFrames[m_currentFrame].inFlightFence);
         } catch (vk::SystemError err) {
             throw std::runtime_error("Failed to submit draw command buffer");
         }
+
+        
 
         vk::PresentInfoKHR presentInfo{};
         presentInfo.waitSemaphoreCount = 1;
@@ -454,6 +439,8 @@ namespace ASH {
         }
 
         m_currentFrame = (m_currentFrame + 1) % m_maxFramesInFlight;
+
+        
     }
 
     void Engine::destroySwapchain() {
@@ -465,4 +452,5 @@ namespace ASH {
 
         m_device.destroyDescriptorPool(m_framePool);
     }
+
 }

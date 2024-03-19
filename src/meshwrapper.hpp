@@ -14,7 +14,7 @@ class MeshWrapper {
     public:
         MeshWrapper();
         ~MeshWrapper();
-        void consume(meshTypes type, std::vector<float> vertices, std::vector<uint32_t> indices);
+        void consume(meshTypes type, std::vector<float>& vertices, std::vector<uint32_t>& indices);
         void finalize(FinalizationChunk chunk);
         Buffer m_vertexBuffer, m_indexBuffer;
         std::unordered_map<meshTypes, int> m_firstIndices;

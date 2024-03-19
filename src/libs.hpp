@@ -51,7 +51,10 @@ struct Buffer {
 };
 
 enum class meshTypes {
-    TRIANGLE,
-    SQUARE,
-    STAR
+	GIRL,
+	GROUND,
+	SKULL
 };
+
+
+std::vector<std::string> split(std::string line, std::string delimiter);
