@@ -164,7 +164,7 @@ namespace ASHInit {
 
         for (size_t i = 0; i < images.size(); i++) {
             bundle.frames[i].image = images[i];
-            bundle.frames[i].imageView = ASHImage::createImageView(logialDevice, images[i], surfaceFormat.format);
+            bundle.frames[i].imageView = ASHImage::createImageView(logialDevice, images[i], surfaceFormat.format, vk::ImageAspectFlagBits::eColor);
         }
 
         bundle.imageFormat = surfaceFormat.format;

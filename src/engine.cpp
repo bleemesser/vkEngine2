@@ -84,6 +84,15 @@ namespace ASH {
         m_swapchainExtent = bundle.extent;
 
         m_maxFramesInFlight = static_cast<int>(m_swapchainFrames.size());
+
+        for (ASHUtil::SwapChainFrame& frame : m_swapchainFrames) {
+            frame.device = m_device;
+            frame.physicalDevice = m_physicalDevice;
+            frame.width = m_swapchainExtent.width;
+            frame.height = m_swapchainExtent.height;
+
+            frame.createDepthResources();
+        }
     }
 
     void Engine::recreateSwapchain() {
@@ -139,6 +148,7 @@ namespace ASH {
         input.fragFilePath = "shaders/shader.frag.spv";
         input.swapchainExtent = m_swapchainExtent;
         input.swapchainImageFormat = m_swapchainFormat;
+        input.depthFormat = m_swapchainFrames[0].depthFormat;
         input.descriptorSetLayouts = {m_frameSetLayout, m_meshSetLayout};
         ASHInit::GraphicsPipelineOutputBundle output = ASHInit::createGraphicsPipeline(input);
         m_pipeline = output.pipeline;
@@ -159,7 +169,7 @@ namespace ASH {
             frame.imageAvailableSemaphore = ASHInit::createSemaphore(m_device);
             frame.renderFinishedSemaphore = ASHInit::createSemaphore(m_device);
 
-            frame.createDescriptorResources(m_device, m_physicalDevice);
+            frame.createDescriptorResources();
 
             frame.descriptorSet = ASHInit::allocateDescriptorSet(m_device, m_framePool, m_frameSetLayout);
         }
@@ -317,7 +327,7 @@ namespace ASH {
 
         memcpy(_frame.modelMatrixWritePtr, _frame.modelMatrices.data(), i * sizeof(glm::mat4));
 
-        _frame.writeDescriptorSet(m_device);
+        _frame.writeDescriptorSet();
     }
 
     void Engine::recordCommands(vk::CommandBuffer commandBuffer, uint32_t imageIndex, Scene *scene) {
@@ -336,8 +346,10 @@ namespace ASH {
         renderPassInfo.renderArea.extent = m_swapchainExtent;
 
         vk::ClearValue clearColor = { std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f} };
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearColor;
+        vk::ClearValue clearDepth = { vk::ClearDepthStencilValue{1.0f, 0} };
+        std::vector<vk::ClearValue> clearValues = {clearColor, clearDepth};
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
 
         commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
@@ -445,20 +457,8 @@ namespace ASH {
     }
 
     void Engine::destroySwapchain() {
-        for (auto frame : m_swapchainFrames) {
-            m_device.destroyImageView(frame.imageView);
-            m_device.destroyFramebuffer(frame.framebuffer);
-            m_device.destroyFence(frame.inFlightFence);
-            m_device.destroySemaphore(frame.imageAvailableSemaphore);
-            m_device.destroySemaphore(frame.renderFinishedSemaphore);
-
-            m_device.unmapMemory(frame.cameraDataBuffer.memory);
-            m_device.freeMemory(frame.cameraDataBuffer.memory);
-            m_device.destroyBuffer(frame.cameraDataBuffer.buffer);
-
-            m_device.unmapMemory(frame.modelMatrixBuffer.memory);
-            m_device.freeMemory(frame.modelMatrixBuffer.memory);
-            m_device.destroyBuffer(frame.modelMatrixBuffer.buffer);
+        for (ASHUtil::SwapChainFrame& frame : m_swapchainFrames) {
+            frame.destroy();
         }
 
         m_device.destroySwapchainKHR(m_swapchain);

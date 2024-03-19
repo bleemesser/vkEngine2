@@ -11,7 +11,7 @@ namespace ASHInit {
         std::string vertFilePath;
         std::string fragFilePath;
         vk::Extent2D swapchainExtent;
-        vk::Format swapchainImageFormat;
+        vk::Format swapchainImageFormat, depthFormat;
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
     };
 
@@ -55,7 +55,7 @@ namespace ASHInit {
     vk::PushConstantRange createPushConstantInfo();
 
     vk::RenderPass createRenderPass(
-        vk::Device device, const vk::Format& swapchainImageFormat
+        vk::Device device, const vk::Format swapchainImageFormat, const vk::Format depthFormat
     );
 
     vk::AttachmentDescription createColorAttachment(
@@ -64,12 +64,18 @@ namespace ASHInit {
 
     vk::AttachmentReference createColorAttachmentRef();
 
+    vk::AttachmentDescription createDepthAttachment(
+        const vk::Format& depthFormat
+    );
+
+    vk::AttachmentReference createDepthAttachmentRef();
+
     vk::SubpassDescription createSubpass(
-        const vk::AttachmentReference& colorAttachmentRef
+        const std::vector<vk::AttachmentReference>& attachments
     );
 
     vk::RenderPassCreateInfo createRenderPassInfo(
-        const vk::AttachmentDescription& colorAttachment,
+        const std::vector<vk::AttachmentDescription>& attachments,
         const vk::SubpassDescription& subpass
     );
 
@@ -113,6 +119,16 @@ namespace ASHInit {
         pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo.pStages = shaderStages.data();
 
+        // Depth test
+        vk::PipelineDepthStencilStateCreateInfo depthState;
+        depthState.flags = vk::PipelineDepthStencilStateCreateFlags();
+        depthState.depthTestEnable = VK_TRUE;
+        depthState.depthWriteEnable = VK_TRUE;
+        depthState.depthCompareOp = vk::CompareOp::eLess;
+        depthState.depthBoundsTestEnable = VK_FALSE;
+        depthState.stencilTestEnable = VK_FALSE;
+        pipelineInfo.pDepthStencilState = &depthState;
+
         // Multisampling
         vk::PipelineMultisampleStateCreateInfo multisampling = createMultisamplingInfo();
         pipelineInfo.pMultisampleState = &multisampling;
@@ -127,7 +143,7 @@ namespace ASHInit {
         pipelineInfo.layout = pipelineLayout;
 
         // Render Pass
-        vk::RenderPass renderPass = createRenderPass(spec.device, spec.swapchainImageFormat);
+        vk::RenderPass renderPass = createRenderPass(spec.device, spec.swapchainImageFormat, spec.depthFormat);
         pipelineInfo.renderPass = renderPass;
         pipelineInfo.subpass = 0;
 
@@ -276,12 +292,19 @@ namespace ASHInit {
     }
 
     vk::RenderPass createRenderPass(
-        vk::Device device, const vk::Format& swapchainImageFormat
+        vk::Device device, const vk::Format swapchainImageFormat, const vk::Format depthFormat
     ) {
-        vk::AttachmentDescription colorAttachment = createColorAttachment(swapchainImageFormat);
-        vk::AttachmentReference colorAttachmentRef = createColorAttachmentRef();
-        vk::SubpassDescription subpass = createSubpass(colorAttachmentRef);
-        vk::RenderPassCreateInfo renderPassInfo = createRenderPassInfo(colorAttachment, subpass);
+        std::vector<vk::AttachmentDescription> attachments;
+        std::vector<vk::AttachmentReference> attachmentRefs;
+
+        attachments.push_back(createColorAttachment(swapchainImageFormat));
+        attachmentRefs.push_back(createColorAttachmentRef());
+
+        attachments.push_back(createDepthAttachment(depthFormat));
+        attachmentRefs.push_back(createDepthAttachmentRef());
+
+        vk::SubpassDescription subpass = createSubpass(attachmentRefs);
+        vk::RenderPassCreateInfo renderPassInfo = createRenderPassInfo(attachments, subpass);
 
         vk::RenderPass renderPass;
         try {
@@ -316,27 +339,55 @@ namespace ASHInit {
         return colorAttachmentRef;
     }
 
+    vk::AttachmentDescription createDepthAttachment(
+        const vk::Format& depthFormat
+    ) {
+        vk::AttachmentDescription colorAttachment{};
+        colorAttachment.flags = vk::AttachmentDescriptionFlags();
+        colorAttachment.format = depthFormat;
+        colorAttachment.samples = vk::SampleCountFlagBits::e1;
+        colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+        colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+        colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+        colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+        colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+        colorAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+        return colorAttachment;
+    }
+
+    vk::AttachmentReference createDepthAttachmentRef() {
+        vk::AttachmentReference colorAttachmentRef{};
+        colorAttachmentRef.attachment = 1;
+        colorAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+        return colorAttachmentRef;
+    }
+
+
+
     vk::SubpassDescription createSubpass(
-        const vk::AttachmentReference& colorAttachmentRef
+        const std::vector<vk::AttachmentReference>& attachments
     ) {
         vk::SubpassDescription subpass{};
         subpass.flags = vk::SubpassDescriptionFlags();
         subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
         subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorAttachmentRef;
+        subpass.pColorAttachments = &attachments[0];
+        subpass.pDepthStencilAttachment = &attachments[1];
+
         return subpass;
     }
 
     vk::RenderPassCreateInfo createRenderPassInfo(
-        const vk::AttachmentDescription& colorAttachment,
+        const std::vector<vk::AttachmentDescription>& attachments,
         const vk::SubpassDescription& subpass
     ) {
         vk::RenderPassCreateInfo renderPassInfo{};
         renderPassInfo.flags = vk::RenderPassCreateFlags();
-        renderPassInfo.attachmentCount = 1;
-        renderPassInfo.pAttachments = &colorAttachment;
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        renderPassInfo.pAttachments = attachments.data();
         renderPassInfo.subpassCount = 1;
         renderPassInfo.pSubpasses = &subpass;
+
         return renderPassInfo;
     }
     

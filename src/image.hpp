@@ -23,6 +23,7 @@ namespace ASHImage {
         vk::ImageTiling tiling;
         vk::ImageUsageFlags usage;
         vk::MemoryPropertyFlags properties;
+        vk::Format format;
     };
 
     struct ImageLayoutTransition {
@@ -86,6 +87,7 @@ namespace ASHImage {
 
     void copyBufferToImage(BufferCopy input);
 
-    vk::ImageView createImageView(vk::Device device, vk::Image image, vk::Format format);
+    vk::ImageView createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags);
 
+    vk::Format getSupportedFormat(vk::PhysicalDevice physicalDevice, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 }

@@ -26,6 +26,7 @@ ASHImage::Texture::Texture(TextureInput input) {
     imageInput.tiling = vk::ImageTiling::eOptimal;
     imageInput.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     imageInput.properties = vk::MemoryPropertyFlagBits::eDeviceLocal;
+    imageInput.format = vk::Format::eR8G8B8A8Unorm;
 
     m_image = createImage(imageInput);
     m_imageMemory = createImageMemory(imageInput, m_image);
@@ -102,7 +103,7 @@ void ASHImage::Texture::populate() {
 }
 
 void ASHImage::Texture::createView() {
-    m_imageView = createImageView(m_device, m_image, vk::Format::eR8G8B8A8Unorm);
+    m_imageView = createImageView(m_device, m_image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 }
 
 void ASHImage::Texture::createSampler() {
@@ -158,7 +159,7 @@ vk::Image ASHImage::createImage(ImageInput input) {
     imageInfo.extent = vk::Extent3D(input.width, input.height, 1);
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
-    imageInfo.format = vk::Format::eR8G8B8A8Unorm;
+    imageInfo.format = input.format;
     imageInfo.tiling = input.tiling;
     imageInfo.initialLayout = vk::ImageLayout::eUndefined;
     imageInfo.usage = input.usage;
@@ -260,7 +261,7 @@ void ASHImage::copyBufferToImage(BufferCopy input) {
     ASHUtil::endJob(input.commandBuffer, input.queue);
 }
 
-vk::ImageView ASHImage::createImageView(vk::Device device, vk::Image image, vk::Format format) {
+vk::ImageView ASHImage::createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) {
     vk::ImageViewCreateInfo createInfo{};
     createInfo.image = image;
     createInfo.viewType = vk::ImageViewType::e2D;
@@ -268,7 +269,7 @@ vk::ImageView ASHImage::createImageView(vk::Device device, vk::Image image, vk::
     createInfo.components.g = vk::ComponentSwizzle::eIdentity;
     createInfo.components.b = vk::ComponentSwizzle::eIdentity;
     createInfo.components.a = vk::ComponentSwizzle::eIdentity;
-    createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    createInfo.subresourceRange.aspectMask = aspectFlags;
     createInfo.subresourceRange.baseMipLevel = 0;
     createInfo.subresourceRange.levelCount = 1;
     createInfo.subresourceRange.baseArrayLayer = 0;
@@ -276,4 +277,17 @@ vk::ImageView ASHImage::createImageView(vk::Device device, vk::Image image, vk::
     createInfo.format = format;
 
     return device.createImageView(createInfo);
+}
+
+vk::Format ASHImage::getSupportedFormat(vk::PhysicalDevice physicalDevice, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+    for (vk::Format format : candidates) {
+        vk::FormatProperties props = physicalDevice.getFormatProperties(format);
+
+        if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+            return format;
+        } else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }    
+    throw std::runtime_error("Failed to find supported format");
 }
