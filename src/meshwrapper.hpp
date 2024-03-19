@@ -14,14 +14,15 @@ class MeshWrapper {
     public:
         MeshWrapper();
         ~MeshWrapper();
-        void consume(meshTypes type, std::vector<float> vertices);
+        void consume(meshTypes type, std::vector<float> vertices, std::vector<uint32_t> indices);
         void finalize(FinalizationChunk chunk);
-        Buffer m_vertexBuffer;
-        std::unordered_map<meshTypes, int> m_offsets;
-        std::unordered_map<meshTypes, int> m_sizes;
+        Buffer m_vertexBuffer, m_indexBuffer;
+        std::unordered_map<meshTypes, int> m_firstIndices;
+        std::unordered_map<meshTypes, int> m_indexCounts;
 
     private:
         vk::Device m_device;
-        int m_offset;
-        std::vector<float> m_lump;
+        int m_indexOffset;
+        std::vector<float> m_vertexLump;
+        std::vector<uint32_t> m_indexLump;
 };

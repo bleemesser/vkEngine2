@@ -189,52 +189,55 @@ namespace ASH {
         m_meshes = new MeshWrapper();
 
         std::vector<float> vertices = { {
-		 0.0f, -0.1f, 1.0f, 1.0f, 1.0f, 0.5f, 0.0f,
-		 0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-		-0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
-	} };
+            0.0f, -0.1f, 1.0f, 1.0f, 1.0f, 0.5f, 0.0f,
+            0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+            -0.1f, 0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
+	    } };
+        std::vector<uint32_t> indices = { {
+            0, 1, 2
+        } };
+
+
         meshTypes type = meshTypes::TRIANGLE;
-        m_meshes->consume(type, vertices);
+        m_meshes->consume(type, vertices, indices);
         
         vertices = { {
             -0.1f,  0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
             -0.1f, -0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
             0.1f, -0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
             0.1f, -0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-            0.1f,  0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-            -0.1f,  0.1f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
 	    } };
-        type = meshTypes::SQUARE;
-        m_meshes->consume(type, vertices);
-
-        vertices = { {
-            -0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 0.0f, 0.25f,
-            -0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.3f, 0.25f,
-            -0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.2f,  0.5f,
-            -0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.3f, 0.25f,
-            0.0f,  -0.1f, 1.0f, 1.0f, 1.0f, 0.5f,  0.0f,
-            0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.7f, 0.25f,
-            -0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.2f,  0.5f,
-            -0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.3f, 0.25f,
-            0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.7f, 0.25f,
-            0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.7f, 0.25f,
-            0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 1.0f, 0.25f,
-            0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.8f,  0.5f,
-            -0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.2f,  0.5f,
-            0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.7f, 0.25f,
-            0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.8f,  0.5f,
-            0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.8f,  0.5f,
-            0.08f,   0.1f, 1.0f, 1.0f, 1.0f, 0.9f,  1.0f,
-            0.0f,  0.02f, 1.0f, 1.0f, 1.0f, 0.5f,  0.6f,
-            -0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.2f,  0.5f,
-            0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.8f,  0.5f,
-            0.0f,  0.02f, 1.0f, 1.0f, 1.0f, 0.5f,  0.6f,
-            -0.06f,   0.0f, 1.0f, 1.0f, 1.0f, 0.2f,  0.5f,
-            0.0f,  0.02f, 1.0f, 1.0f, 1.0f, 0.5f,  0.6f,
-            -0.08f,   0.1f, 1.0f, 1.0f, 1.0f, 0.1f,  1.0f
+        indices = { {
+            0, 1, 2,
+            2, 3, 0
         } };
+        type = meshTypes::SQUARE;
+        m_meshes->consume(type, vertices, indices);
+
+        vertices = {{
+            -0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 0.0f, 0.25f, 
+            -0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.3f, 0.25f,
+            -0.06f, 0.0f, 1.0f, 1.0f, 1.0f, 0.2f, 0.5f,   
+            0.0f, -0.1f, 1.0f, 1.0f, 1.0f, 0.5f, 0.0f,    
+            0.04f, -0.05f, 1.0f, 1.0f, 1.0f, 0.7f, 0.25f, 
+            0.1f, -0.05f, 1.0f, 1.0f, 1.0f, 1.0f, 0.25f,  
+            0.06f, 0.0f, 1.0f, 1.0f, 1.0f, 0.8f, 0.5f,    
+            0.08f, 0.1f, 1.0f, 1.0f, 1.0f, 0.9f, 1.0f,    
+            0.0f, 0.02f, 1.0f, 1.0f, 1.0f, 0.5f, 0.6f,    
+            -0.08f, 0.1f, 1.0f, 1.0f, 1.0f, 0.1f, 1.0f    
+        }};
+        indices = {{
+            0, 1, 2,
+            1, 3, 4,
+            2, 1, 4,
+            4, 5, 6,
+            2, 4, 6,
+            6, 7, 8,
+            2, 6, 8,
+            2, 8, 9
+        }};
         type = meshTypes::STAR;
-        m_meshes->consume(type, vertices);
+        m_meshes->consume(type, vertices, indices);
 
         FinalizationChunk chunk{};
         chunk.device = m_device;
@@ -273,6 +276,7 @@ namespace ASH {
         vk::Buffer vertexBuffers[] = {m_meshes->m_vertexBuffer.buffer};
         vk::DeviceSize offsets[] = {0};
         commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+        commandBuffer.bindIndexBuffer(m_meshes->m_indexBuffer.buffer, 0, vk::IndexType::eUint32);
     }
 
     void Engine::prepFrame(uint32_t imageIndex, Scene *scene) {
@@ -364,10 +368,10 @@ namespace ASH {
     }
 
     void Engine::renderObjects(vk::CommandBuffer commandBuffer, meshTypes type, uint32_t& startInstance, uint32_t instanceCount) {
-        int firstVert = m_meshes->m_offsets.find(type)->second;
-        int vertexCount = m_meshes->m_sizes.find(type)->second;
+        int indexCount = m_meshes->m_indexCounts.find(type)->second;
+        int firstIndex = m_meshes->m_firstIndices.find(type)->second;
         m_materials[type]->use(commandBuffer, m_pipelineLayout);
-        commandBuffer.draw(vertexCount, instanceCount, firstVert, startInstance);
+        commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, 0, startInstance);
         startInstance += instanceCount;
     }
 
